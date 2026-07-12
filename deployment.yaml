@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: hello-go
-        image: mac-cai/hello-go:init
+        image: shelbyfamily/hello-go:c4cae42
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
