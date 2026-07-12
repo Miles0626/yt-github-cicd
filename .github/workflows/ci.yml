@@ -52,9 +52,6 @@ jobs:
       FULL_COMMIT: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: true
 
       # 登录DockerHub，密钥从仓库Secrets读取，不暴露明文
       - name: Login DockerHub
@@ -69,22 +66,5 @@ jobs:
           IMAGE_FULL=${DOCKER_USER}/hello-go:${SHORT_SHA}
           docker build -t ${IMAGE_FULL} .
           docker push ${IMAGE_FULL}
+          echo "构建推送完成，镜像地址：${IMAGE_FULL}"
           echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_ENV
-
-      # 自动替换【根目录】deployment.yaml 里的镜像tag
-      - name: Update root deployment.yaml image tag
-        run: |
-          SHORT_SHA=${{ env.SHORT_SHA }}
-          sed -i "s|image: ${DOCKER_USER}/hello-go:.*|image: ${DOCKER_USER}/hello-go:${SHORT_SHA}|" deployment.yaml
-
-      # 提交根目录 deployment.yaml 变更回仓库
-      - name: Commit & push deployment config
-        run: |
-          git config --global user.name "CI Robot"
-          git config --global user.email "ci-bot@demo.com"
-          git add deployment.yaml
-          # 仅当文件有变更才提交推送
-          if [[ -n $(git status --porcelain) ]]; then
-            git commit -m "[CI Auto] update image tag to ${SHORT_SHA}"
-            git push
-          fi
