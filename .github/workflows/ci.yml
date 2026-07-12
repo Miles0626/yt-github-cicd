@@ -1,32 +1,63 @@
-name: Go CI
+name: Go CICD
 
+# 触发规则
 on:
   push:
-    branches: ["main"]
+    branches: [ "main", "dev" ]   # 推送到main/dev分支触发流水线
   pull_request:
-    branches: ["main"]
-  workflow_dispatch:
+    branches: [ "main" ]         # 提PR合并到main时触发校验
+  workflow_dispatch:             # 支持手动在页面点击运行流水线
 
+# 流水线任务组
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  # 任务1：代码校验、单元测试、编译验证（必跑）
+  ci-test:
+    runs-on: ubuntu-latest       # 使用Github提供的Ubuntu云机器执行
     steps:
-      # 拉取代码
-      - uses: actions/checkout@v4
-      # 安装Go环境
-      - name: Setup Go
+      # 拉取当前仓库代码到运行环境
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 安装Go 1.26环境
+      - name: Setup Go 1.26
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
-      # 依赖整理
-      - name: Go Mod Tidy
+          go-version: "1.26"
+
+      # 下载项目依赖
+      - name: Go mod tidy
         run: go mod tidy
-      # 单元测试
-      - name: Run Test
+
+      # 执行单元测试
+      - name: Run unit test
         run: go test -v ./...
-      # 编译二进制
-      - name: Build App
-        run: go build -o hello-app main.go
-      # 运行编译后的程序验证输出
-      - name: Run Program
-        run: ./hello-app
+
+      # 编译二进制并运行，验证程序无编译/运行异常
+      - name: Build binary verify
+        run: |
+          go build -o hello-app main.go
+          ./hello-app
+
+  # 任务2：构建镜像并推送到DockerHub，依赖ci-test执行成功才会运行
+  build-push-image:
+    needs: ci-test               # 依赖ci-test，测试失败则跳过打包镜像
+    runs-on: ubuntu-latest
+    # 判断：PR提交只做代码校验，不打包上传镜像；只有真实push代码才构建镜像
+    if: github.event_name != 'pull_request'
+    # 全局环境变量，简化镜像地址书写
+    env:
+      DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # 登录DockerHub，密钥从仓库Secrets读取，不暴露明文
+      - name: Login DockerHub
+        env:
+          DOCKER_PWD: ${{ secrets.DOCKER_PASSWORD }}
+        run: docker login -u $DOCKER_USER -p $DOCKER_PWD
+
+      # 构建镜像并推送至DockerHub
+      - name: Build & push image
+        run: |
+          docker build -t ${DOCKER_USER}/hello-go:latest .
+          docker push ${DOCKER_USER}/hello-go:latest
