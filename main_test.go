@@ -9,3 +9,11 @@ func TestHello(t *testing.T) {
 		t.Fatalf("输出不匹配，期待%s, 得到 %s", expected, result)
 	}
 }
+
+func TestPing(t *testing.T) {
+	expected := "Ping..."
+	result := Ping()
+	if expected != result {
+		t.Fatalf("输出不匹配，期待%s, 得到%s", expected, result)
+	}
+}
