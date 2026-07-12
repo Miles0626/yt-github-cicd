@@ -14,6 +14,7 @@ spec:
     spec:
       containers:
       - name: hello-go
-        # 初始占位，流水线会自动替换为commit短哈希
         image: mac-cai/hello-go:init
         imagePullPolicy: Always
+        ports:
+        - containerPort: 8080

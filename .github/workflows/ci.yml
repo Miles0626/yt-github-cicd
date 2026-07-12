@@ -71,14 +71,13 @@ jobs:
           docker push ${IMAGE_FULL}
           echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_ENV
 
-      # 自动替换 k8s/deployment.yaml 里的镜像tag
-      - name: Update k8s deployment image tag
+      # 自动替换【根目录】deployment.yaml 里的镜像tag
+      - name: Update root deployment.yaml image tag
         run: |
           SHORT_SHA=${{ env.SHORT_SHA }}
-          # Mac sed和Linux sed参数区分，适配ubuntu
           sed -i "s|image: ${DOCKER_USER}/hello-go:.*|image: ${DOCKER_USER}/hello-go:${SHORT_SHA}|" deployment.yaml
 
-      # 提交yaml变更回仓库
+      # 提交根目录 deployment.yaml 变更回仓库
       - name: Commit & push deployment config
         run: |
           git config --global user.name "CI Robot"
