@@ -49,8 +49,12 @@ jobs:
     # 全局环境变量，简化镜像地址书写
     env:
       DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+      FULL_COMMIT: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
 
       # 登录DockerHub，密钥从仓库Secrets读取，不暴露明文
       - name: Login DockerHub
@@ -58,8 +62,30 @@ jobs:
           DOCKER_PWD: ${{ secrets.DOCKER_PASSWORD }}
         run: docker login -u $DOCKER_USER -p $DOCKER_PWD
 
-      # 构建镜像并推送至DockerHub
-      - name: Build & push image
+      # 1. 截取7位短commit哈希；2. 构建固定版本镜像（抛弃latest）
+      - name: Build & push image with commit tag
         run: |
-          docker build -t ${DOCKER_USER}/hello-go:latest .
-          docker push ${DOCKER_USER}/hello-go:latest
+          SHORT_SHA=$(echo $FULL_COMMIT | cut -c1-7)
+          IMAGE_FULL=${DOCKER_USER}/hello-go:${SHORT_SHA}
+          docker build -t ${IMAGE_FULL} .
+          docker push ${IMAGE_FULL}
+          echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_ENV
+
+      # 自动替换 k8s/deployment.yaml 里的镜像tag
+      - name: Update k8s deployment image tag
+        run: |
+          SHORT_SHA=${{ env.SHORT_SHA }}
+          # Mac sed和Linux sed参数区分，适配ubuntu
+          sed -i "s|image: ${DOCKER_USER}/hello-go:.*|image: ${DOCKER_USER}/hello-go:${SHORT_SHA}|" k8s/deployment.yaml
+
+      # 提交yaml变更回仓库
+      - name: Commit & push deployment config
+        run: |
+          git config --global user.name "CI Robot"
+          git config --global user.email "ci-bot@demo.com"
+          git add k8s/deployment.yaml
+          # 仅当文件有变更才提交推送
+          if [[ -n $(git status --porcelain) ]]; then
+            git commit -m "[CI Auto] update image tag to ${SHORT_SHA}"
+            git push
+          fi

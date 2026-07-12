@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: hello-go
-        image: shelbyfamily/hello-go:latest
-        # 每次重启都拉最新镜像，适配CI自动更新的latest
+        # 初始占位，流水线会自动替换为commit短哈希
+        image: mac-cai/hello-go:init
         imagePullPolicy: Always
