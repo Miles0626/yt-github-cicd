@@ -37,10 +37,8 @@ jobs:
         run: |
           go build -o hello-app main.go
           ./hello-app &
-          PID=$!
           sleep 2
-          kill &PID
-          wait $PID || true
+          pkill -f ./hello-app
 
   # 任务2：构建镜像并推送到DockerHub，依赖ci-test执行成功才会运行
   build-push-image:
