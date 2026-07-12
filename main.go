@@ -9,6 +9,7 @@ func main() {
 	fmt.Println(Hello())
 	fmt.Println(Ping())
 	fmt.Println("new text 01")
+	fmt.Println("new text 02")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Hello World Go K8s Demo")
