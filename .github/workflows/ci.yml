@@ -76,14 +76,14 @@ jobs:
         run: |
           SHORT_SHA=${{ env.SHORT_SHA }}
           # Mac sed和Linux sed参数区分，适配ubuntu
-          sed -i "s|image: ${DOCKER_USER}/hello-go:.*|image: ${DOCKER_USER}/hello-go:${SHORT_SHA}|" k8s/deployment.yaml
+          sed -i "s|image: ${DOCKER_USER}/hello-go:.*|image: ${DOCKER_USER}/hello-go:${SHORT_SHA}|" deployment.yaml
 
       # 提交yaml变更回仓库
       - name: Commit & push deployment config
         run: |
           git config --global user.name "CI Robot"
           git config --global user.email "ci-bot@demo.com"
-          git add k8s/deployment.yaml
+          git add deployment.yaml
           # 仅当文件有变更才提交推送
           if [[ -n $(git status --porcelain) ]]; then
             git commit -m "[CI Auto] update image tag to ${SHORT_SHA}"
